@@ -30,8 +30,13 @@ class ViewController: UIViewController {
     let xstart : CGFloat = 13
     let ystart : CGFloat = 75
     
+    // acceptable colors
+    let acceptableColors: [UIColor] = [.red, .green, .blue]
+    
+    let deadColor = UIColor.white
+    
     // 2D array for storing cell states (true = alive, false = dead)
-    var grid: [[Bool]] = []
+    var grid: [[UIColor]] = []
     
     // Timer to update the game
     var timer: Timer?
@@ -52,7 +57,16 @@ class ViewController: UIViewController {
     func initializeGrid() {
         // Randomly populate the grid with alive (true) and dead (false) cells
         for _ in 0..<rows {
-            let row = (0..<columns).map { _ in Bool.random() }
+            let row = (0..<columns).map { _ -> UIColor in
+                let isAlive = Bool.random()
+                
+                if isAlive {
+                    // Randomly pick the acceptable colors
+                    return acceptableColors.randomElement()!
+                } else {
+                    return deadColor // Dead cell
+                }
+            }
             grid.append(row)
         }
     }
@@ -67,7 +81,7 @@ class ViewController: UIViewController {
                                         height: cellSize)
                 
                 // Set background color based on whether the cell is alive or dead
-                cellView.backgroundColor = grid[row][column] ? .black : .white
+                cellView.backgroundColor = grid[row][column]
                 cellView.layer.borderWidth = 1
                 cellView.layer.borderColor = UIColor.lightGray.cgColor
                 view.addSubview(cellView)
@@ -86,22 +100,22 @@ class ViewController: UIViewController {
     }
     
     @objc func updateGame() {
-        var newGrid: [[Bool]] = grid
+        var newGrid: [[UIColor]] = grid
         
         // Apply the Game of Life rules to each cell
         for row in 0..<rows {
             for column in 0..<columns {
                 let aliveNeighbors = countAliveNeighbors(row: row, column: column)
-                let isAlive = grid[row][column]
+                let thisCellColor = grid[row][column]
                 
                 // Apply the rules:
-                if isAlive {
+                if thisCellColor != deadColor {
                     if aliveNeighbors < 2 || aliveNeighbors > 3 {
-                        newGrid[row][column] = false // Cell dies
+                        newGrid[row][column] = deadColor // Cell dies
                     }
                 } else {
                     if aliveNeighbors == 3 {
-                        newGrid[row][column] = true // Cell becomes alive
+                        newGrid[row][column] = acceptableColors.randomElement()! // Cell becomes alive
                     }
                 }
             }
@@ -127,7 +141,7 @@ class ViewController: UIViewController {
                 
                 // Ensure the neighboring cell is within bounds
                 if neighborRow >= 0 && neighborRow < rows && neighborColumn >= 0 && neighborColumn < columns {
-                    if grid[neighborRow][neighborColumn] {
+                    if grid[neighborRow][neighborColumn] != deadColor {
                         aliveCount += 1
                     }
                 }
@@ -142,7 +156,7 @@ class ViewController: UIViewController {
         for row in 0..<rows {
             for column in 0..<columns {
                 if let cellView = view.viewWithTag(row * columns + column) {
-                    cellView.backgroundColor = grid[row][column] ? .black : .white
+                    cellView.backgroundColor = grid[row][column] 
                 }
             }
         }
