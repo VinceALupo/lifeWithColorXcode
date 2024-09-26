@@ -1,21 +1,3 @@
-//
-//  ViewController.swift
-//  lifeWithColor
-//
-//  Created by Vince Lupo on 9/20/24.
-//
-
-//import UIKit
-//
-//class ViewController: UIViewController {
-//
-//    override func viewDidLoad() {
-//        super.viewDidLoad()
-//        // Do any additional setup after loading the view.
-//    }
-//
-//
-//}
 
 
 import UIKit
@@ -31,7 +13,7 @@ class ViewController: UIViewController {
     let ystart : CGFloat = 75
     
     // acceptable colors
-    let acceptableColors: [UIColor] = [.red, .green, .blue]
+    let acceptableColors: [UIColor] = [.red, .green, .blue, .yellow, .cyan, .gray, .orange]
     
     let deadColor = UIColor.white
     
@@ -92,7 +74,7 @@ class ViewController: UIViewController {
     
     func startGameLoop() {
         // Update every 0.5 seconds
-        timer = Timer.scheduledTimer(timeInterval: 0.25,
+        timer = Timer.scheduledTimer(timeInterval: 0.1,
                                      target: self,
                                      selector: #selector(updateGame),
                                      userInfo: nil,
@@ -105,7 +87,9 @@ class ViewController: UIViewController {
         // Apply the Game of Life rules to each cell
         for row in 0..<rows {
             for column in 0..<columns {
-                let aliveNeighbors = countAliveNeighbors(row: row, column: column)
+                let aliveNeighborsAndColorBlend = countAliveNeighbors(row: row, column: column)
+                let aliveNeighbors = aliveNeighborsAndColorBlend.0
+                
                 let thisCellColor = grid[row][column]
                 
                 // Apply the rules:
@@ -115,7 +99,9 @@ class ViewController: UIViewController {
                     }
                 } else {
                     if aliveNeighbors == 3 {
-                        newGrid[row][column] = acceptableColors.randomElement()! // Cell becomes alive
+                        let colorBlend = aliveNeighborsAndColorBlend.1
+                        newGrid[row][column] = colorBlend
+                            //acceptableColors.randomElement()! // Cell becomes alive
                     }
                 }
             }
@@ -128,8 +114,10 @@ class ViewController: UIViewController {
         updateGridUI()
     }
     
-    func countAliveNeighbors(row: Int, column: Int) -> Int {
+    
+    func countAliveNeighbors(row: Int, column: Int) -> (Int, UIColor) {
         var aliveCount = 0
+        var colorMerge = deadColor
         
         // Check the 8 surrounding cells
         for i in -1...1 {
@@ -141,22 +129,59 @@ class ViewController: UIViewController {
                 
                 // Ensure the neighboring cell is within bounds
                 if neighborRow >= 0 && neighborRow < rows && neighborColumn >= 0 && neighborColumn < columns {
-                    if grid[neighborRow][neighborColumn] != deadColor {
+                    let thisColor = grid[neighborRow][neighborColumn]
+                    
+                    if thisColor != deadColor {
                         aliveCount += 1
+                        colorMerge = blendColors(color1: colorMerge, color2: thisColor)
                     }
                 }
             }
         }
         
-        return aliveCount
+        return (aliveCount, colorMerge)
     }
+         
+
+    func blendColors(color1: UIColor, color2: UIColor) -> UIColor {
+        var colorToUseForColor1 : UIColor = color1
+        
+        // Extract the RGBA components of the first color
+        var r1: CGFloat = 0
+        var g1: CGFloat = 0
+        var b1: CGFloat = 0
+        var a1: CGFloat = 0
+        
+        if (color1 == deadColor) {
+            colorToUseForColor1 = color2
+        }
+
+        colorToUseForColor1.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        
+        // Extract the RGBA components of the second color
+        var r2: CGFloat = 0
+        var g2: CGFloat = 0
+        var b2: CGFloat = 0
+        var a2: CGFloat = 0
+        color2.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        
+        // Blend the two colors by averaging the RGBA components
+        let blendedRed = (r1 + r2) / 2
+        let blendedGreen = (g1 + g2) / 2
+        let blendedBlue = (b1 + b2) / 2
+        let blendedAlpha = (a1 + a2) / 2
+        
+        // Return the blended color
+        return UIColor(red: blendedRed, green: blendedGreen, blue: blendedBlue, alpha: blendedAlpha)
+    }
+
     
     func updateGridUI() {
         // Update the grid's UI
         for row in 0..<rows {
             for column in 0..<columns {
                 if let cellView = view.viewWithTag(row * columns + column) {
-                    cellView.backgroundColor = grid[row][column] 
+                    cellView.backgroundColor = grid[row][column]
                 }
             }
         }
